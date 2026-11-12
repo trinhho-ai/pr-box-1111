@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PR BOX 11.11 · KOL</title>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<style>
+  :root {
+    --bg: #faf9f5; --panel: #ffffff; --fg: #1f1e1d; --muted: #6b6a66; --line: #e8e6dc;
+    --c0: #c96442; --c1: #3d6fb0; --muted-bar: #d9d6cb; --ok: #2f7d4f; --bad: #b3403a;
+    --serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1f1e1d; --panel: #2a2927; --fg: #f0eee6; --muted: #a8a59c; --line: #3d3b37; --muted-bar: #4a4844; --c0: #e07a55; --c1: #6c9bd8; --ok: #5cb27e; --bad: #e0716a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; }
+  .pb { max-width: 1200px; margin: 0 auto; padding: 28px 20px 48px; display: flex; flex-direction: column; gap: 24px; }
+  .pb-head { display: flex; flex-direction: column; gap: 6px; }
+  .pb-title { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0; }
+  .pb-take { margin: 0; color: var(--muted); max-width: 70ch; line-height: 1.5; }
+  .pb-take b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pb-upd { font-size: 12px; color: var(--muted); }
+  .pb-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 14px; }
+  .pb-tile, .pb-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+  .pb-tile { display: flex; flex-direction: column; gap: 4px; }
+  .pb-label { font-size: 12px; color: var(--muted); }
+  .pb-big { font-family: var(--serif); font-size: 28px; font-variant-numeric: tabular-nums; }
+  .pb-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pb-sub b { font-weight: 600; }
+  .pb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 14px; }
+  .pb-card { display: flex; flex-direction: column; gap: 8px; }
+  .pb-card h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .pb-note { margin: 0; font-size: 12px; color: var(--muted); }
+  .pb-chart { position: relative; min-height: 260px; }
+  .pb-kolchart { position: relative; }
+  .pb-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 10px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+  .pb-tip .k { color: var(--muted); }
+  .pb-tablebox { max-height: 34rem; overflow: auto; }
+  .pb-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+  .pb-table th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pb-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pb-table .n { text-align: right; }
+  .pb-table a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); }
+  @media (max-width: 640px) { .pb-hide-narrow { display: none; } }
+  .pb-ads { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; border-top: 1px solid var(--line); }
+  .pb-sec { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; }
+  .pb-err { color: var(--bad); }
+  svg text { font-size: 12px; }
+</style>
+</head>
+<body>
+<div class="pb">
+  <header class="pb-head">
+    <h1 class="pb-title">PR BOX 11.11 · KOL</h1>
+    <p class="pb-take">Ngày <b id="t-day">—</b>, tổng view các video KOL đạt <b id="t-views">—</b>, tăng <b id="t-delta">—</b> so với ngày <b id="t-prev">—</b>. Số liệu lấy từ sheet "KOL 11.11".</p>
+    <span class="pb-upd" id="t-upd"></span>
+  </header>
+
+  <section class="pb-tiles">
+    <div class="pb-tile"><span class="pb-label">Tổng view (ngày mới nhất)</span><span class="pb-big" id="k-views">—</span><span class="pb-sub"><b id="k-delta">—</b> so với hôm trước</span></div>
+    <div class="pb-tile"><span class="pb-label">Engagement (like, comment, share, lưu)</span><span class="pb-big" id="k-eng">—</span><span class="pb-sub"><b id="k-engdelta">—</b> so với hôm trước</span></div>
+    <div class="pb-tile"><span class="pb-label">KOL đã có view</span><span class="pb-big" id="k-live">—</span><span class="pb-sub"><b id="k-livedelta">—</b> KOL so với hôm trước · tổng <b id="k-total">—</b> KOL</span></div>
+    <div class="pb-tile"><span class="pb-label">Chi tiêu ads</span><span class="pb-big" id="k-spend">—</span><span class="pb-sub"><b id="k-cpv">—</b> / 1.000 lượt xem</span></div>
+  </section>
+
+  <section class="pb-grid">
+    <div class="pb-card"><h2>Tổng view theo ngày</h2><p class="pb-note">Cộng view của mọi video có số trong ngày đó. Những ngày đầu ít KOL đã air nên tổng thấp hơn.</p><div class="pb-chart" id="c-byday"></div></div>
+    <div class="pb-card"><h2>View theo KOL</h2><p class="pb-note">Số mới nhất của từng video; phần xám là view hôm trước.</p><div class="pb-kolchart" id="c-kol"></div></div>
+  </section>
+
+  <section class="pb-card">
+    <h2>Chi tiết từng KOL</h2>
+    <p class="pb-note">Bấm tên KOL để mở video. Sắp xếp theo view mới nhất.</p>
+    <div class="pb-tablebox"><table class="pb-table"><thead><tr>
+      <th>KOL</th><th class="n pb-hide-narrow">View hôm trước</th><th class="n">View mới nhất</th><th class="n">Tăng</th><th class="n pb-hide-narrow">Engagement</th><th class="n pb-hide-narrow">Tỷ lệ tương tác</th>
+    </tr></thead><tbody id="tb-kol"></tbody></table></div>
+  </section>
+
+  <section class="pb-ads">
+    <div class="pb-head"><h2 class="pb-sec">Report ads</h2><p class="pb-note">Số liệu quảng cáo từ tab "REPORT ADS" (<span id="a-upd">—</span>). Chi phí tính bằng đồng.</p></div>
+    <div class="pb-tiles">
+      <div class="pb-tile"><span class="pb-label">Tổng chi tiêu</span><span class="pb-big" id="a-spend">—</span><span class="pb-sub"><b id="a-groups">—</b> nhóm quảng cáo</span></div>
+      <div class="pb-tile"><span class="pb-label">Lượt xem video từ ads</span><span class="pb-big" id="a-views">—</span><span class="pb-sub"><b id="a-impr">—</b> lần hiển thị</span></div>
+      <div class="pb-tile"><span class="pb-label">Chi phí / 1.000 lượt xem</span><span class="pb-big" id="a-cpv">—</span><span class="pb-sub">CPM <b id="a-cpm">—</b></span></div>
+      <div class="pb-tile"><span class="pb-label">Nhóm đang chạy</span><span class="pb-big" id="a-active">—</span><span class="pb-sub"><b id="a-paused">—</b> nhóm đã tạm dừng</span></div>
+    </div>
+    <div class="pb-grid">
+      <div class="pb-card"><h2>Chi tiêu và lượt xem theo nhóm</h2><p class="pb-note">Thanh là chi tiêu; số bên phải là lượt xem video từ ads. Nhóm đang chạy tô đậm.</p><div class="pb-kolchart" id="c-adsbars"></div></div>
+      <div class="pb-card"><h2>Chi phí cho 1.000 lượt xem</h2><p class="pb-note">Thấp hơn là rẻ hơn. Đường đứt là mức trung bình của cả đợt.</p><div class="pb-kolchart" id="c-adseff"></div></div>
+    </div>
+    <section class="pb-card">
+      <h2>Chi tiết từng nhóm quảng cáo</h2>
+      <p class="pb-note">Sắp xếp theo chi tiêu.</p>
+      <div class="pb-tablebox"><table class="pb-table"><thead><tr>
+        <th>Nhóm quảng cáo</th><th>Trạng thái</th><th class="n">Chi tiêu</th><th class="n">Lượt xem</th><th class="n pb-hide-narrow">Tiếp cận</th><th class="n pb-hide-narrow">Lượt nhấp</th><th class="n pb-hide-narrow">CPM</th><th class="n pb-hide-narrow">Like trả phí</th>
+      </tr></thead><tbody id="tb-ads"></tbody></table></div>
+    </section>
+  </section>
+</div>
+
+<script>
+(async function () {
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
+  const pct = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 1 });
+  const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+  const num = (s) => { if (s == null) return null; const t = String(s).replace(/[^0-9]/g, ''); return t === '' ? null : Number(t); };
+  const set = (id, v) => { $(id).textContent = v == null || v === '' ? '—' : v; };
+  const signed = (id, v) => { const el = $(id); el.textContent = v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt.format(Math.abs(v)); el.style.color = !v ? '' : v > 0 ? 'var(--ok)' : 'var(--bad)'; };
+
+  let raw;
+  try { raw = await (await fetch('data.json?v=' + Date.now())).json(); }
+  catch (e) { document.querySelector('.pb-take').innerHTML = '<span class="pb-err">Không tải được số liệu.</span>'; return; }
+
+  // ---- KOL ----
+  const kv = raw.kol.values || [];
+  const named = { 'STT': 'stt', 'NAME': 'name', 'ID': 'id', 'LINK AIR': 'link', 'FOLLOWERS': 'followers' };
+  const keyOf = (h) => { const t = String(h || '').replace(/\s+/g, ' ').trim().toUpperCase(); let m = t.match(/^VIEW \((\d+)\/11\)$/); if (m) return 'view_' + m[1]; m = t.match(/^ENGAGEMENT \((\d+)\/11\)$/); if (m) return 'eng_' + m[1]; return named[t] || null; };
+  const keys = (kv[0] || []).map(keyOf);
+  const kol = [];
+  for (const r of kv.slice(1)) {
+    const ni = keys.indexOf('name'); if (!r || !String(r[ni] || '').trim()) continue;
+    const o = {}; keys.forEach((k, i) => { if (k && !(k in o)) o[k] = (k.startsWith('view_') || k.startsWith('eng_')) ? num(r[i]) : String(r[i] == null ? '' : r[i]).trim(); });
+    kol.push(o);
+  }
+  const days = [...new Set(kol.flatMap((r) => Object.keys(r)).filter((k) => /^view_\d+$/.test(k)).map((k) => Number(k.slice(5))))].sort((a, b) => a - b);
+  const byDay = days.map((d) => { const vs = kol.map((r) => r['view_' + d]).filter((v) => v != null); return { day: d + '/11', d, views: vs.reduce((a, b) => a + b, 0), kols: vs.length }; }).filter((x) => x.kols > 0);
+  const L = byDay.length ? byDay[byDay.length - 1].d : null, P = byDay.length > 1 ? byDay[byDay.length - 2].d : null;
+  const latest = kol.map((r) => { const v = L != null ? r['view_' + L] ?? null : null, p = P != null ? r['view_' + P] ?? null : null, e = L != null ? r['eng_' + L] ?? null : null, ep = P != null ? r['eng_' + P] ?? null : null;
+    return { name: r.name, link: r.link, views_prev: p, views_latest: v, delta: v != null && p != null ? v - p : null, eng: e, eng_prev: ep, er: e != null && v ? e / v : null }; });
+  const live = latest.filter((r) => r.views_latest != null);
+  const withE = live.filter((r) => r.eng != null);
+  const both = withE.filter((r) => r.eng_prev != null);
+  const last = byDay[byDay.length - 1], prev = byDay[byDay.length - 2];
+  set('t-day', last && last.day); set('t-prev', prev && prev.day);
+  set('t-views', last && fmt.format(last.views)); set('k-views', last && fmt.format(last.views));
+  const totDelta = latest.reduce((a, r) => a + (r.delta ?? 0), 0);
+  set('t-delta', fmt.format(totDelta)); signed('k-delta', totDelta);
+  set('k-eng', withE.length ? fmt.format(withE.reduce((a, r) => a + r.eng, 0)) : null);
+  signed('k-engdelta', both.length ? both.reduce((a, r) => a + r.eng - r.eng_prev, 0) : null);
+  set('k-live', fmt.format(live.length)); set('k-total', fmt.format(latest.length));
+  signed('k-livedelta', prev ? live.length - latest.filter((r) => r.views_prev != null).length : null);
+  if (raw.updated) set('t-upd', 'Cập nhật lúc ' + raw.updated);
+
+  const tipBox = (el) => { const t = document.createElement('div'); t.className = 'pb-tip'; t.hidden = true; el.append(t); return t; };
+  const showTip = (tip, el, ev, title, lines) => {
+    tip.replaceChildren(); const k = document.createElement('div'); k.className = 'k'; k.textContent = title; tip.append(k);
+    lines.forEach((s) => { const d = document.createElement('div'); d.textContent = s; tip.append(d); });
+    tip.hidden = false; const r = el.getBoundingClientRect();
+    tip.style.left = Math.max(0, Math.min(ev.clientX - r.left + 12, r.width - tip.offsetWidth - 4)) + 'px';
+    tip.style.top = Math.max(0, ev.clientY - r.top - tip.offsetHeight - 8) + 'px';
+  };
+
+  function drawByDay() {
+    const el = $('c-byday'); const data = byDay; el.replaceChildren(); if (!data.length) return;
+    const W = Math.max(260, el.clientWidth), H = 260, m = { t: 24, r: 8, b: 28, l: 8 };
+    const x = d3.scaleBand(data.map((d) => d.day), [m.l, W - m.r]).padding(0.3);
+    const y = d3.scaleLinear([0, d3.max(data, (d) => d.views) || 1], [H - m.b, m.t]).nice();
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b).attr('stroke', css('--line'));
+    const bw = Math.min(48, x.bandwidth());
+    const bars = svg.append('g').selectAll('rect').data(data).join('rect').attr('x', (d) => x(d.day) + (x.bandwidth() - bw) / 2).attr('width', bw).attr('y', (d) => y(d.views)).attr('height', (d) => y(0) - y(d.views)).attr('rx', 3).attr('fill', css('--c0'));
+    svg.append('g').selectAll('text').data(data).join('text').attr('x', (d) => x(d.day) + x.bandwidth() / 2).attr('y', (d) => y(d.views) - 6).attr('text-anchor', 'middle').attr('fill', css('--fg')).text((d) => W < 420 ? d3.format('.2s')(d.views).replace('k', 'K') : fmt.format(d.views));
+    svg.append('g').selectAll('text').data(data).join('text').attr('x', (d) => x(d.day) + x.bandwidth() / 2).attr('y', H - 8).attr('text-anchor', 'middle').attr('fill', css('--muted')).text((d) => d.day);
+    el.append(svg.node()); const tip = tipBox(el);
+    bars.on('mousemove', (ev, d) => showTip(tip, el, ev, 'Ngày ' + d.day, [fmt.format(d.views) + ' view · ' + d.kols + ' KOL'])).on('mouseleave', () => { tip.hidden = true; });
+  }
+
+  function hbars(el, data, valOf, labelOf, prevOf, colorOf, refVal, tipOf) {
+    el.replaceChildren(); if (!data.length) return;
+    const W = Math.max(260, el.clientWidth), row = 22, m = { t: 4, r: 8, b: 4 }, H = m.t + m.b + data.length * row;
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    el.append(svg.node());
+    const probe = svg.append('g'); let lw = 0, vw = 0;
+    data.forEach((d) => { lw = Math.max(lw, probe.append('text').text(d.name).node().getComputedTextLength()); vw = Math.max(vw, probe.append('text').text(labelOf(d)).node().getComputedTextLength()); });
+    probe.remove(); lw = Math.min(lw, W * 0.38);
+    const x0 = lw + 10, x1 = W - m.r - vw - 8;
+    const x = d3.scaleLinear([0, Math.max(d3.max(data, valOf), refVal || 0)], [x0, Math.max(x0 + 20, x1)]);
+    const rows = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (d, i) => `translate(0,${m.t + i * row})`);
+    rows.append('text').attr('x', lw).attr('y', row / 2).attr('dy', '0.35em').attr('text-anchor', 'end').attr('fill', css('--fg')).text((d) => d.name)
+      .each(function () { let s = this.textContent; while (this.getComputedTextLength() > lw && s.length > 3) { s = s.slice(0, -2); this.textContent = s + '…'; } });
+    rows.append('rect').attr('x', x0).attr('y', 4).attr('height', row - 8).attr('rx', 2).attr('width', (d) => Math.max(1, x(valOf(d)) - x0)).attr('fill', colorOf);
+    if (prevOf) rows.append('rect').attr('x', x0).attr('y', 4).attr('height', row - 8).attr('rx', 2).attr('width', (d) => Math.max(0, x(prevOf(d)) - x0)).attr('fill', css('--muted-bar'));
+    rows.append('text').attr('x', (d) => x(valOf(d)) + 6).attr('y', row / 2).attr('dy', '0.35em').attr('fill', css('--muted')).text(labelOf);
+    if (refVal) svg.append('line').attr('x1', x(refVal)).attr('x2', x(refVal)).attr('y1', m.t).attr('y2', H - m.b).attr('stroke', css('--muted')).attr('stroke-dasharray', '4 3');
+    const tip = tipBox(el);
+    rows.append('rect').attr('width', W).attr('height', row).attr('fill', 'transparent').on('mousemove', (ev, d) => showTip(tip, el, ev, d.name, tipOf(d))).on('mouseleave', () => { tip.hidden = true; });
+  }
+
+  const kolSorted = live.slice().sort((a, b) => b.views_latest - a.views_latest);
+  const drawKol = () => hbars($('c-kol'), kolSorted, (d) => d.views_latest, (d) => fmt.format(d.views_latest), (d) => d.views_prev != null ? Math.min(d.views_prev, d.views_latest) : 0, () => css('--c0'), null,
+    (d) => ['Mới nhất: ' + fmt.format(d.views_latest), 'Hôm trước: ' + (d.views_prev == null ? '—' : fmt.format(d.views_prev)), 'Tăng: ' + (d.delta == null ? '—' : fmt.format(d.delta))]);
+
+  const n = (v) => v == null ? '—' : fmt.format(v);
+  const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
+  $('tb-kol').replaceChildren(...latest.slice().sort((a, b) => (b.views_latest ?? -1) - (a.views_latest ?? -1)).map((r) => {
+    const tr = document.createElement('tr'); const nc = document.createElement('td');
+    if (/^https:\/\/(www\.)?tiktok\.com\//.test(r.link || '')) { const a = document.createElement('a'); a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = r.name; nc.append(a); } else nc.textContent = r.name;
+    tr.append(nc, td(n(r.views_prev), 'n pb-hide-narrow'), td(n(r.views_latest), 'n'), td(r.delta == null ? '—' : '+' + fmt.format(r.delta), 'n'), td(n(r.eng), 'n pb-hide-narrow'), td(r.er == null ? '—' : pct.format(r.er), 'n pb-hide-narrow'));
+    return tr;
+  }));
+
+  // ---- ADS ----
+  const av = raw.ads.values || [];
+  const hi = av.findIndex((r) => r && /nhóm quảng cáo/i.test(String(r[0] || '')));
+  const upd = String((av[0] && av[0][0]) || '').trim();
+  const names = { 'tên nhóm quảng cáo': 'name', 'trạng thái': 'status', 'chi tiêu': 'spend', 'lần hiển thị': 'impressions', 'phạm vi tiếp cận': 'reach', 'lượt xem video': 'views', 'lượt nhấp (tất cả)': 'clicks', 'cpm': 'cpm', 'lượt thích nhờ trả phí': 'likes' };
+  const ak = hi >= 0 ? av[hi].map((h) => names[String(h || '').replace(/\s+/g, ' ').trim().toLowerCase()] || null) : [];
+  const ads = [];
+  if (hi >= 0) for (const r of av.slice(hi + 1)) {
+    const nm = String((r && r[0]) || '').trim(); if (!nm || /^tổng/i.test(nm)) continue;
+    const o = {}; ak.forEach((k, i) => { if (k) o[k] = (k === 'name' || k === 'status') ? String(r[i] == null ? '' : r[i]).trim() : num(r[i]); }); ads.push(o);
+  }
+  const isActive = (r) => /đang hoạt động/i.test(r.status || '');
+  const sum = (k) => ads.reduce((a, r) => a + (r[k] || 0), 0);
+  const spend = sum('spend'), impr = sum('impressions'), views = sum('views'), active = ads.filter(isActive).length;
+  const cpv = views ? spend / views * 1000 : null, cpm = impr ? spend / impr * 1000 : null;
+  set('a-upd', upd); set('a-spend', fmt.format(spend) + ' đ'); set('k-spend', fmt.format(spend) + ' đ');
+  set('a-groups', fmt.format(ads.length)); set('a-views', fmt.format(views)); set('a-impr', fmt.format(impr));
+  set('a-cpv', cpv == null ? null : fmt.format(cpv) + ' đ'); set('k-cpv', cpv == null ? null : fmt.format(cpv) + ' đ');
+  set('a-cpm', cpm == null ? null : fmt.format(cpm) + ' đ'); set('a-active', fmt.format(active)); set('a-paused', fmt.format(ads.length - active));
+  if (!raw.updated && upd) set('t-upd', upd);
+
+  const adsBySpend = ads.filter((r) => r.spend != null).sort((a, b) => b.spend - a.spend);
+  const eff = ads.filter((r) => r.views).map((r) => ({ ...r, cpv: r.spend / r.views * 1000 })).sort((a, b) => a.cpv - b.cpv);
+  const adsColor = (d) => isActive(d) ? css('--c1') : css('--muted-bar');
+  const drawAds = () => {
+    hbars($('c-adsbars'), adsBySpend, (d) => d.spend, (d) => fmt.format(d.views || 0) + ' view', null, adsColor, null, (d) => ['Chi tiêu: ' + fmt.format(d.spend) + ' đ', 'Lượt xem: ' + fmt.format(d.views || 0), 'Trạng thái: ' + d.status]);
+    hbars($('c-adseff'), eff, (d) => d.cpv, (d) => fmt.format(d.cpv) + ' đ', null, adsColor, cpv, (d) => ['Chi phí / 1.000 lượt xem: ' + fmt.format(d.cpv) + ' đ', 'Trạng thái: ' + d.status]);
+  };
+  $('tb-ads').replaceChildren(...adsBySpend.map((r) => {
+    const tr = document.createElement('tr'); const st = td(r.status); st.style.color = isActive(r) ? 'var(--ok)' : 'var(--muted)';
+    tr.append(td(r.name), st, td(n(r.spend), 'n'), td(n(r.views), 'n'), td(n(r.reach), 'n pb-hide-narrow'), td(n(r.clicks), 'n pb-hide-narrow'), td(n(r.cpm), 'n pb-hide-narrow'), td(n(r.likes), 'n pb-hide-narrow'));
+    return tr;
+  }));
+
+  const drawAll = () => { drawByDay(); drawKol(); drawAds(); };
+  drawAll();
+  let w = window.innerWidth; window.addEventListener('resize', () => { if (window.innerWidth !== w) { w = window.innerWidth; drawAll(); } });
+})();
+</script>
+</body>
+</html>
