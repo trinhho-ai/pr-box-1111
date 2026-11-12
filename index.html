@@ -3,243 +3,384 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PR BOX 11.11 · KOL</title>
+<title>PR Box · So sánh theo tháng</title>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <style>
   :root {
-    --bg: #faf9f5; --panel: #ffffff; --fg: #1f1e1d; --muted: #6b6a66; --line: #e8e6dc;
-    --c0: #c96442; --c1: #3d6fb0; --muted-bar: #d9d6cb; --ok: #2f7d4f; --bad: #b3403a;
+    --bg: #faf9f5; --panel: #ffffff; --fg: #1f1e1d; --muted: #6b6a66; --line: #e8e6dc; --chart-muted: #d9d6cb; --ref: #8a877e;
+    --c0: #c96442; --c1: #3d6fb0; --c2: #5a8f5e; --c3: #8a5cb0; --c4: #c29a2e; --ok: #2f7d4f; --bad: #b3403a;
     --serif: "Iowan Old Style", Georgia, "Times New Roman", serif;
     --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #1f1e1d; --panel: #2a2927; --fg: #f0eee6; --muted: #a8a59c; --line: #3d3b37; --muted-bar: #4a4844; --c0: #e07a55; --c1: #6c9bd8; --ok: #5cb27e; --bad: #e0716a; }
+    :root { --bg: #1f1e1d; --panel: #2a2927; --fg: #f0eee6; --muted: #a8a59c; --line: #3d3b37; --chart-muted: #4a4844; --ref: #8a877e;
+      --c0: #e07a55; --c1: #6c9bd8; --c2: #7fb983; --c3: #b18ad6; --c4: #d9b552; --ok: #5cb27e; --bad: #e0716a; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font-family: var(--sans); font-size: 15px; }
-  .pb { max-width: 1200px; margin: 0 auto; padding: 28px 20px 48px; display: flex; flex-direction: column; gap: 24px; }
-  .pb-head { display: flex; flex-direction: column; gap: 6px; }
-  .pb-title { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0; }
-  .pb-take { margin: 0; color: var(--muted); max-width: 70ch; line-height: 1.5; }
-  .pb-take b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
-  .pb-upd { font-size: 12px; color: var(--muted); }
-  .pb-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 12rem), 1fr)); gap: 14px; }
-  .pb-tile, .pb-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
-  .pb-tile { display: flex; flex-direction: column; gap: 4px; }
-  .pb-label { font-size: 12px; color: var(--muted); }
-  .pb-big { font-family: var(--serif); font-size: 28px; font-variant-numeric: tabular-nums; }
-  .pb-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
-  .pb-sub b { font-weight: 600; }
-  .pb-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 14px; }
-  .pb-card { display: flex; flex-direction: column; gap: 8px; }
-  .pb-card h2 { margin: 0; font-size: 16px; font-weight: 600; }
-  .pb-note { margin: 0; font-size: 12px; color: var(--muted); }
-  .pb-chart { position: relative; min-height: 260px; }
-  .pb-kolchart { position: relative; }
-  .pb-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 10px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
-  .pb-tip .k { color: var(--muted); }
-  .pb-tablebox { max-height: 34rem; overflow: auto; }
-  .pb-table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
-  .pb-table th { position: sticky; top: 0; background: var(--panel); text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  .pb-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
-  .pb-table .n { text-align: right; }
-  .pb-table a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); }
-  @media (max-width: 640px) { .pb-hide-narrow { display: none; } }
-  .pb-ads { display: flex; flex-direction: column; gap: 14px; padding-top: 20px; border-top: 1px solid var(--line); }
-  .pb-sec { margin: 0; font-family: var(--serif); font-weight: 400; font-size: 26px; }
-  .pb-err { color: var(--bad); }
+  .pm { max-width: 1200px; margin: 0 auto; padding: 28px 20px 48px; display: flex; flex-direction: column; gap: 24px; }
+  .pm-head { display: flex; flex-direction: column; gap: 6px; }
+  .pm-title { font-family: var(--serif); font-weight: 400; font-size: 30px; margin: 0; }
+  .pm-take { margin: 0; color: var(--muted); max-width: 72ch; line-height: 1.5; }
+  .pm-take b { color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; }
+  .pm-upd { font-size: 12px; color: var(--muted); }
+  .pm-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr)); gap: 14px; }
+  .pm-tile, .pm-card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 18px; min-width: 0; }
+  .pm-tile { display: flex; flex-direction: column; gap: 4px; }
+  .pm-label { font-size: 12px; color: var(--muted); }
+  .pm-big { font-family: var(--serif); font-size: 28px; font-variant-numeric: tabular-nums; }
+  .pm-sub { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pm-sub b { font-weight: 600; }
+  .pm-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 24rem), 1fr)); gap: 14px; }
+  .pm-card { display: flex; flex-direction: column; gap: 8px; }
+  .pm-card h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .pm-note { margin: 0; font-size: 12px; color: var(--muted); }
+  .pm-chart { position: relative; min-height: 240px; }
+  .pm-legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 12px; color: var(--muted); }
+  .pm-legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .pm-legend i { width: .625rem; height: .625rem; border-radius: 2px; display: inline-block; }
+  .pm-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,.12); padding: 6px 10px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; z-index: 2; }
+  .pm-tip .k { color: var(--muted); }
+  .pm-tablebox { overflow-x: auto; }
+  .pm-table { width: 100%; border-collapse: collapse; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .pm-table th { text-align: left; font-weight: 600; font-size: 12px; color: var(--muted); padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pm-table td { padding: 6px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  .pm-table .n { text-align: right; }
+  .pm-vbox { max-height: 36rem; overflow: auto; }
+  .pm-vtable th { position: sticky; top: 0; background: var(--panel); }
+  .pm-vtable td.cap { white-space: normal; min-width: 16rem; max-width: 34rem; color: var(--muted); }
+  .pm-vtable a { color: inherit; text-decoration: underline; text-decoration-color: var(--line); }
+  .pm-text { margin: 0; white-space: pre-wrap; max-width: 80ch; line-height: 1.5; }
+  .pm-bul { margin: 0; padding-left: 1.25rem; display: flex; flex-direction: column; gap: 4px; max-width: 80ch; line-height: 1.5; }
+  .pm-bul b { font-weight: 600; font-variant-numeric: tabular-nums; }
+  details summary { cursor: pointer; font-size: 14px; }
+  details.pm-defs summary { font-size: 12px; color: var(--muted); }
+  details.pm-defs ul { margin: 6px 0 0; padding-left: 1.25rem; font-size: 12px; color: var(--muted); line-height: 1.5; }
   svg text { font-size: 12px; }
 </style>
 </head>
 <body>
-<div class="pb">
-  <header class="pb-head">
-    <h1 class="pb-title">PR BOX 11.11 · KOL</h1>
-    <p class="pb-take">Ngày <b id="t-day">—</b>, tổng view các video KOL đạt <b id="t-views">—</b>, tăng <b id="t-delta">—</b> so với ngày <b id="t-prev">—</b>. Số liệu lấy từ sheet "KOL 11.11".</p>
-    <span class="pb-upd" id="t-upd"></span>
+<div class="pm">
+  <header class="pm-head">
+    <h1 class="pm-title">PR Box · So sánh theo tháng</h1>
+    <p class="pm-take"><b data-t="month">—</b> đạt <b data-t="views">—</b> view từ <b data-t="total">—</b> KOL, <b data-t="vchg">—</b> so với <b data-t="prev">—</b>; trung bình <b data-t="avg">—</b> view/KOL (<b data-t="achg">—</b>).</p>
+    <span class="pm-upd">Số liệu cập nhật đến <span id="upd">—</span></span>
   </header>
 
-  <section class="pb-tiles">
-    <div class="pb-tile"><span class="pb-label">Tổng view (ngày mới nhất)</span><span class="pb-big" id="k-views">—</span><span class="pb-sub"><b id="k-delta">—</b> so với hôm trước</span></div>
-    <div class="pb-tile"><span class="pb-label">Engagement (like, comment, share, lưu)</span><span class="pb-big" id="k-eng">—</span><span class="pb-sub"><b id="k-engdelta">—</b> so với hôm trước</span></div>
-    <div class="pb-tile"><span class="pb-label">KOL đã có view</span><span class="pb-big" id="k-live">—</span><span class="pb-sub"><b id="k-livedelta">—</b> KOL so với hôm trước · tổng <b id="k-total">—</b> KOL</span></div>
-    <div class="pb-tile"><span class="pb-label">Chi tiêu ads</span><span class="pb-big" id="k-spend">—</span><span class="pb-sub"><b id="k-cpv">—</b> / 1.000 lượt xem</span></div>
+  <section class="pm-tiles">
+    <div class="pm-tile"><span class="pm-label">View · <span data-t="month">—</span></span><span class="pm-big" data-t="views">—</span><span class="pm-sub"><b data-t="vchg_c">—</b> so với <span data-t="prev">—</span></span></div>
+    <div class="pm-tile"><span class="pm-label">Số KOL air</span><span class="pm-big" data-t="total">—</span><span class="pm-sub"><b data-t="tchg">—</b> KOL so với tháng trước</span></div>
+    <div class="pm-tile"><span class="pm-label">TB view / KOL</span><span class="pm-big" data-t="avg">—</span><span class="pm-sub"><b data-t="achg_c">—</b> so với tháng trước</span></div>
+    <div class="pm-tile"><span class="pm-label">Tỷ lệ phản hồi khi liên hệ</span><span class="pm-big" data-t="resp">—</span><span class="pm-sub"><b data-t="rchg">—</b> điểm % · <span data-t="contacts">—</span> lượt liên hệ</span></div>
+    <div class="pm-tile"><span class="pm-label">View organic · T11</span><span class="pm-big" data-t="s_org">—</span><span class="pm-sub"><b data-t="s_orgchg">—</b> so với organic T10 (<span data-t="s_org10">—</span>)</span></div>
+    <div class="pm-tile"><span class="pm-label">View ads · T11</span><span class="pm-big" data-t="s_ads">—</span><span class="pm-sub"><b data-t="s_share">—</b> tổng view · chi <span data-t="s_spend">—</span> · T10: <span data-t="s_ads10">—</span></span></div>
   </section>
 
-  <section class="pb-grid">
-    <div class="pb-card"><h2>Tổng view theo ngày</h2><p class="pb-note">Cộng view của mọi video có số trong ngày đó. Những ngày đầu ít KOL đã air nên tổng thấp hơn.</p><div class="pb-chart" id="c-byday"></div></div>
-    <div class="pb-card"><h2>View theo KOL</h2><p class="pb-note">Số mới nhất của từng video; phần xám là view hôm trước.</p><div class="pb-kolchart" id="c-kol"></div></div>
+  <section class="pm-grid">
+    <div class="pm-card"><h2>Tổng view theo tháng</h2><p class="pm-note">Tổng view gồm cả view ads. Đường đứt là trung bình các tháng.</p><div class="pm-chart" id="c_views"></div></div>
+    <div class="pm-card"><h2>Số KOL theo tháng: Inhouse và Agency</h2>
+      <div class="pm-legend"><span><i style="background:var(--c0)"></i>Inhouse</span><span><i style="background:var(--c1)"></i>Agency</span><span><i style="background:var(--chart-muted)"></i>T11 (chưa tách)</span></div>
+      <div class="pm-chart" id="c_kols"></div></div>
+    <div class="pm-card"><h2>Trung bình view mỗi KOL</h2><p class="pm-note">View organic chia số KOL của tháng (cột TB View trên sheet). Cho biết chất lượng từng creator, không phụ thuộc số lượng hay ads.</p><div class="pm-chart" id="c_avg"></div></div>
+    <div class="pm-card"><h2>Tỷ lệ tương tác (ENG ÷ View)</h2><p class="pm-note">Tháng có số ENG nghi nhập sai được đánh dấu đỏ.</p><div class="pm-chart" id="c_er"></div></div>
+    <div class="pm-card"><h2>Liên hệ và tỷ lệ phản hồi</h2><p class="pm-note">Chỉ có số từ T7. Cột là số lượt liên hệ, nhãn là tỷ lệ phản hồi.</p><div class="pm-chart" id="c_contact"></div></div>
   </section>
 
-  <section class="pb-card">
-    <h2>Chi tiết từng KOL</h2>
-    <p class="pb-note">Bấm tên KOL để mở video. Sắp xếp theo view mới nhất.</p>
-    <div class="pb-tablebox"><table class="pb-table"><thead><tr>
-      <th>KOL</th><th class="n pb-hide-narrow">View hôm trước</th><th class="n">View mới nhất</th><th class="n">Tăng</th><th class="n pb-hide-narrow">Engagement</th><th class="n pb-hide-narrow">Tỷ lệ tương tác</th>
-    </tr></thead><tbody id="tb-kol"></tbody></table></div>
+  <section class="pm-card">
+    <h2>Chi tiết từng tháng</h2>
+    <p class="pm-note">% thay đổi so với tháng liền trước.</p>
+    <div class="pm-tablebox"><table class="pm-table"><thead><tr>
+      <th>Tháng</th><th class="n">KOL</th><th class="n">Inhouse</th><th class="n">Agency</th><th class="n">View</th><th class="n">± View</th><th class="n">View organic</th><th class="n">TB view/KOL</th><th class="n">± TB</th><th class="n">ENG</th><th class="n">Tương tác</th><th class="n">Liên hệ</th><th class="n">Phản hồi</th>
+    </tr></thead><tbody id="tb_months"></tbody></table></div>
   </section>
 
-  <section class="pb-ads">
-    <div class="pb-head"><h2 class="pb-sec">Report ads</h2><p class="pb-note">Số liệu quảng cáo từ tab "REPORT ADS" (<span id="a-upd">—</span>). Chi phí tính bằng đồng.</p></div>
-    <div class="pb-tiles">
-      <div class="pb-tile"><span class="pb-label">Tổng chi tiêu</span><span class="pb-big" id="a-spend">—</span><span class="pb-sub"><b id="a-groups">—</b> nhóm quảng cáo</span></div>
-      <div class="pb-tile"><span class="pb-label">Lượt xem video từ ads</span><span class="pb-big" id="a-views">—</span><span class="pb-sub"><b id="a-impr">—</b> lần hiển thị</span></div>
-      <div class="pb-tile"><span class="pb-label">Chi phí / 1.000 lượt xem</span><span class="pb-big" id="a-cpv">—</span><span class="pb-sub">CPM <b id="a-cpm">—</b></span></div>
-      <div class="pb-tile"><span class="pb-label">Nhóm đang chạy</span><span class="pb-big" id="a-active">—</span><span class="pb-sub"><b id="a-paused">—</b> nhóm đã tạm dừng</span></div>
-    </div>
-    <div class="pb-grid">
-      <div class="pb-card"><h2>Chi tiêu và lượt xem theo nhóm</h2><p class="pb-note">Thanh là chi tiêu; số bên phải là lượt xem video từ ads. Nhóm đang chạy tô đậm.</p><div class="pb-kolchart" id="c-adsbars"></div></div>
-      <div class="pb-card"><h2>Chi phí cho 1.000 lượt xem</h2><p class="pb-note">Thấp hơn là rẻ hơn. Đường đứt là mức trung bình của cả đợt.</p><div class="pb-kolchart" id="c-adseff"></div></div>
-    </div>
-    <section class="pb-card">
-      <h2>Chi tiết từng nhóm quảng cáo</h2>
-      <p class="pb-note">Sắp xếp theo chi tiêu.</p>
-      <div class="pb-tablebox"><table class="pb-table"><thead><tr>
-        <th>Nhóm quảng cáo</th><th>Trạng thái</th><th class="n">Chi tiêu</th><th class="n">Lượt xem</th><th class="n pb-hide-narrow">Tiếp cận</th><th class="n pb-hide-narrow">Lượt nhấp</th><th class="n pb-hide-narrow">CPM</th><th class="n pb-hide-narrow">Like trả phí</th>
-      </tr></thead><tbody id="tb-ads"></tbody></table></div>
-    </section>
+  <section class="pm-card">
+    <h2>Video KOL đã air · T11</h2>
+    <p class="pm-note">Xếp theo view. Engagement = like + comment + share + lưu. Caption lấy từ cột CAPTION trong sheet "KOL 11.11".</p>
+    <div class="pm-tablebox pm-vbox"><table class="pm-table pm-vtable"><thead><tr>
+      <th>KOL</th><th class="n">View</th><th class="n">Engagement</th><th>Caption</th><th>Link</th>
+    </tr></thead><tbody id="tb_videos"></tbody></table></div>
   </section>
+
+  <section class="pm-card">
+    <h2>Nhận xét T11</h2>
+    <ul class="pm-bul">
+      <li><b data-t="views">—</b> view (<b data-t="vchg_c">—</b>), nhưng <b data-t="s_share">—</b> đến từ ads; organic chỉ <b data-t="s_orgchg">—</b> so với T10.</li>
+      <li>Nhiều KOL hơn (<b data-t="total">—</b>) nhưng TB organic / KOL <b data-t="achg_c">—</b>; phản hồi chỉ <b data-t="resp">—</b>.</li>
+      <li>Tiếp theo: giữ nhóm top (dẫn đầu <b data-t="n_top">—</b>), lọc creator view thấp, xem lại list liên hệ.</li>
+    </ul>
+  </section>
+
+  <details class="pm-card">
+    <summary>Nhận xét T10 (từ sheet)</summary>
+    <p class="pm-text" id="note10">—</p>
+  </details>
+
+  <details class="pm-defs">
+    <summary>Cách tính và lưu ý</summary>
+    <ul>
+      <li>T1–T10 lấy từ bảng tháng ở tab "Trang tính4" (file Pr Box - T10). T11 lấy từ sheet "KOL 11.11" (file PR BOX 11.11): mỗi video lấy view của ngày mới nhất có số.</li>
+      <li>TB view/KOL = view organic ÷ số KOL, lấy từ cột "TB View" trên sheet. T7, T8 ghi theo nghìn (29,24 = 29.240) nên được nhân 1.000. T1–T6 không có TB View nên dùng View ÷ Total. View organic = TB view × số KOL; view ads = View − organic.</li>
+      <li>Tỉ lệ Inhouse/Agency tính lại từ số lượng; cột % trên sheet có chỗ vượt 100% (ví dụ T4 Agency 125,35%).</li>
+      <li>Tỷ lệ phản hồi = số KOL air ÷ số KOL đã liên hệ. T11: số liên hệ là số ID khác nhau trong tab LIST KOL (file PR BOX 11.11), ID trùng chỉ tính một lần.</li>
+      <li>T11 chưa có số Inhouse/Agency.</li>
+      <li>View ads T11 = tổng "Lượt xem video" của các nhóm quảng cáo ở tab REPORT ADS. View organic T11 = tổng view TikTok của các video KOL trừ view ads, vì view ads cũng được TikTok tính vào lượt xem của video.</li>
+    </ul>
+  </details>
 </div>
 
 <script>
 (async function () {
-  const $ = (id) => document.getElementById(id);
   const fmt = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 0 });
-  const pct = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 1 });
+  const pct1 = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 1 });
+  const pct2 = new Intl.NumberFormat('vi-VN', { style: 'percent', maximumFractionDigits: 2 });
+  const dec1 = new Intl.NumberFormat('vi-VN', { maximumFractionDigits: 1 });
+  const short = (v) => v >= 1e6 ? dec1.format(v / 1e6) + 'M' : v >= 1e3 ? fmt.format(v / 1e3) + 'K' : fmt.format(v);
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  const num = (s) => { if (s == null) return null; const t = String(s).replace(/[^0-9]/g, ''); return t === '' ? null : Number(t); };
-  const set = (id, v) => { $(id).textContent = v == null || v === '' ? '—' : v; };
-  const signed = (id, v) => { const el = $(id); el.textContent = v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '±') + fmt.format(Math.abs(v)); el.style.color = !v ? '' : v > 0 ? 'var(--ok)' : 'var(--bad)'; };
+  const COL = () => ['--c0', '--c1', '--c2', '--c3', '--c4'].map(css);
+  const n0 = (s) => { const t = String(s == null ? '' : s).replace(/[^0-9]/g, ''); return t === '' ? null : Number(t); };
+  const values = (x) => (x && x.values) || [];
 
   let raw;
   try { raw = await (await fetch('data.json?v=' + Date.now())).json(); }
-  catch (e) { document.querySelector('.pb-take').innerHTML = '<span class="pb-err">Không tải được số liệu.</span>'; return; }
+  catch (e) { document.querySelector('.pm-take').textContent = 'Không tải được số liệu.'; return; }
+  document.getElementById('upd').textContent = raw.updated || '—';
 
-  // ---- KOL ----
-  const kv = raw.kol.values || [];
-  const named = { 'STT': 'stt', 'NAME': 'name', 'ID': 'id', 'LINK AIR': 'link', 'FOLLOWERS': 'followers' };
-  const keyOf = (h) => { const t = String(h || '').replace(/\s+/g, ' ').trim().toUpperCase(); let m = t.match(/^VIEW \((\d+)\/11\)$/); if (m) return 'view_' + m[1]; m = t.match(/^ENGAGEMENT \((\d+)\/11\)$/); if (m) return 'eng_' + m[1]; return named[t] || null; };
-  const keys = (kv[0] || []).map(keyOf);
-  const kol = [];
-  for (const r of kv.slice(1)) {
-    const ni = keys.indexOf('name'); if (!r || !String(r[ni] || '').trim()) continue;
-    const o = {}; keys.forEach((k, i) => { if (k && !(k in o)) o[k] = (k.startsWith('view_') || k.startsWith('eng_')) ? num(r[i]) : String(r[i] == null ? '' : r[i]).trim(); });
-    kol.push(o);
-  }
-  const days = [...new Set(kol.flatMap((r) => Object.keys(r)).filter((k) => /^view_\d+$/.test(k)).map((k) => Number(k.slice(5))))].sort((a, b) => a - b);
-  const byDay = days.map((d) => { const vs = kol.map((r) => r['view_' + d]).filter((v) => v != null); return { day: d + '/11', d, views: vs.reduce((a, b) => a + b, 0), kols: vs.length }; }).filter((x) => x.kols > 0);
-  const L = byDay.length ? byDay[byDay.length - 1].d : null, P = byDay.length > 1 ? byDay[byDay.length - 2].d : null;
-  const latest = kol.map((r) => { const v = L != null ? r['view_' + L] ?? null : null, p = P != null ? r['view_' + P] ?? null : null, e = L != null ? r['eng_' + L] ?? null : null, ep = P != null ? r['eng_' + P] ?? null : null;
-    return { name: r.name, link: r.link, views_prev: p, views_latest: v, delta: v != null && p != null ? v - p : null, eng: e, eng_prev: ep, er: e != null && v ? e / v : null }; });
-  const live = latest.filter((r) => r.views_latest != null);
-  const withE = live.filter((r) => r.eng != null);
-  const both = withE.filter((r) => r.eng_prev != null);
-  const last = byDay[byDay.length - 1], prev = byDay[byDay.length - 2];
-  set('t-day', last && last.day); set('t-prev', prev && prev.day);
-  set('t-views', last && fmt.format(last.views)); set('k-views', last && fmt.format(last.views));
-  const totDelta = latest.reduce((a, r) => a + (r.delta ?? 0), 0);
-  set('t-delta', fmt.format(totDelta)); signed('k-delta', totDelta);
-  set('k-eng', withE.length ? fmt.format(withE.reduce((a, r) => a + r.eng, 0)) : null);
-  signed('k-engdelta', both.length ? both.reduce((a, r) => a + r.eng - r.eng_prev, 0) : null);
-  set('k-live', fmt.format(live.length)); set('k-total', fmt.format(latest.length));
-  signed('k-livedelta', prev ? live.length - latest.filter((r) => r.views_prev != null).length : null);
-  if (raw.updated) set('t-upd', 'Cập nhật lúc ' + raw.updated);
+  // ---- monthly (Trang tính4) ----
+  const monthly = (() => {
+    const vals = values(raw.monthly);
+    const head = (vals[0] || []).map((h) => String(h || '').replace(/\s+/g, ' ').trim().toLowerCase());
+    const at = (name) => head.indexOf(name);
+    const ix = { inhouse: at('inhouse'), agency: at('agency'), total: at('total'), views: at('view'), eng: at('eng'), contacts: at('sl contact'), response: at('% phản hồi'), tb_view: at('tb view') };
+    const num = (s) => {
+      let t = String(s == null ? '' : s).trim();
+      if (!t || t === '-') return null;
+      const pct = t.endsWith('%');
+      t = t.replace('%', '').replace(/\s/g, '');
+      t = /^\d{1,3}(\.\d{3})+$/.test(t) ? t.replace(/\./g, '') : t.replace(/\./g, '').replace(',', '.');
+      const n = Number(t);
+      if (!isFinite(n)) return null;
+      return pct ? n / 100 : n;
+    };
+    const rows = [];
+    for (const r of vals.slice(1)) {
+      const month = String((r && r[0]) || '').trim().toUpperCase();
+      const m = month.match(/^T(\d{1,2})$/); if (!m) continue;
+      const o = { month, m: Number(m[1]) };
+      for (const [k, i] of Object.entries(ix)) o[k] = i < 0 ? null : num(r[i]);
+      rows.push(o);
+    }
+    return rows;
+  })();
 
-  const tipBox = (el) => { const t = document.createElement('div'); t.className = 'pb-tip'; t.hidden = true; el.append(t); return t; };
-  const showTip = (tip, el, ev, title, lines) => {
-    tip.replaceChildren(); const k = document.createElement('div'); k.className = 'k'; k.textContent = title; tip.append(k);
-    lines.forEach((s) => { const d = document.createElement('div'); d.textContent = s; tip.append(d); });
+  // ---- report T10 ----
+  const report = (() => {
+    const vals = values(raw.report_t10);
+    const hi = vals.findIndex((r) => r && r.some((c) => /top perform/i.test(String(c || ''))));
+    if (hi < 0) return { note: [], org: null, ads: null };
+    const head = vals[hi].map((h) => String(h || '').replace(/\s+/g, ' ').trim().toLowerCase());
+    const data = vals[hi + 1] || [];
+    const iNote = head.findIndex((h) => h.startsWith('đánh giá'));
+    const iOrg = head.indexOf('view organic'), iPlus = head.findIndex((h) => h.startsWith('view + ads'));
+    const org = iOrg < 0 ? null : n0(data[iOrg]), plus = iPlus < 0 ? null : n0(data[iPlus]);
+    return { note: String(data[iNote] || '').split('\n'), org, ads: plus == null ? null : org != null && plus >= org ? plus - org : plus };
+  })();
+
+  // ---- T11 KOL ----
+  const t11kol = (() => {
+    const vals = values(raw.t11_kol);
+    const keyOf = (h) => {
+      const t = String(h || '').replace(/\s+/g, ' ').trim().toUpperCase();
+      let m = t.match(/^VIEW \((\d+)\/11\)$/); if (m) return 'view_' + m[1];
+      m = t.match(/^ENGAGEMENT \((\d+)\/11\)$/); if (m) return 'eng_' + m[1];
+      return { 'NAME': 'name', 'STT': 'stt', 'LINK AIR': 'link', 'CAPTION': 'caption' }[t] || null;
+    };
+    const keys = (vals[0] || []).map(keyOf);
+    const isText = (k) => k === 'name' || k === 'link' || k === 'caption';
+    const rows = [];
+    for (const r of vals.slice(1)) {
+      if (!r || !String(r[0] || '').trim() || !String(r[1] || '').trim()) continue;
+      const o = {}; keys.forEach((k, i) => { if (k && !(k in o)) o[k] = isText(k) ? String(r[i] == null ? '' : r[i]).trim() : n0(r[i]); });
+      rows.push(o);
+    }
+    return rows;
+  })();
+  const days = [...new Set(t11kol.flatMap((r) => Object.keys(r)).filter((k) => /^view_\d+$/.test(k)).map((k) => Number(k.slice(5))))].sort((a, b) => a - b);
+  const t11rank = t11kol.map((r) => {
+    let views = null, eng = null, day = null;
+    for (const d of days) { if (r['view_' + d] != null) { views = r['view_' + d]; day = d; } if (r['eng_' + d] != null) eng = r['eng_' + d]; }
+    return { name: r.name, views, eng, day, caption: r.caption || null, link: r.link || null };
+  }).filter((r) => r.views != null).sort((a, b) => b.views - a.views);
+  const t11 = { kols_live: t11rank.length, views: t11rank.reduce((a, r) => a + r.views, 0), eng: t11rank.reduce((a, r) => a + (r.eng || 0), 0) };
+
+  // ---- contacts & ads ----
+  const contacts = (() => {
+    const vals = values(raw.contacts_t11);
+    const head = (vals[0] || []).map((h) => String(h || '').replace(/\s+/g, ' ').trim().toUpperCase());
+    const iN = head.indexOf('NAME'), iI = head.indexOf('ID');
+    const seen = new Set();
+    for (const r of vals.slice(1)) {
+      const name = String((r && r[iN]) || '').trim(), id = String((r && r[iI]) || '').trim().toLowerCase();
+      if (!name || !id || id === 'id') continue; seen.add(id);
+    }
+    return seen.size;
+  })();
+  const ads = (() => {
+    const vals = values(raw.ads_t11);
+    const hi = vals.findIndex((r) => r && /nhóm quảng cáo/i.test(String(r[0] || '')));
+    if (hi < 0) return [];
+    const head = vals[hi].map((h) => String(h || '').replace(/\s+/g, ' ').trim().toLowerCase());
+    const iS = head.indexOf('chi tiêu'), iV = head.indexOf('lượt xem video');
+    const rows = [];
+    for (const r of vals.slice(hi + 1)) {
+      const name = String((r && r[0]) || '').trim();
+      if (!name || /^tổng/i.test(name)) continue;
+      rows.push({ name, spend: iS < 0 ? null : n0(r[iS]), views: iV < 0 ? null : n0(r[iV]) });
+    }
+    return rows;
+  })();
+
+  // ---- months ----
+  const months = (() => {
+    const rows = monthly.map((r) => {
+      const tb = r.tb_view == null ? null : r.tb_view < 1000 ? r.tb_view * 1000 : r.tb_view;
+      const organic = tb != null && r.total ? Math.round(tb * r.total) : null;
+      return { ...r, organic, avg: tb != null ? tb : r.total ? r.views / r.total : null };
+    });
+    if (t11.kols_live && !rows.some((r) => r.m === 11)) {
+      const adsV = ads.reduce((a, x) => a + (x.views || 0), 0);
+      const organic = ads.length ? Math.max(0, t11.views - adsV) : t11.views;
+      rows.push({ month: 'T11', m: 11, inhouse: null, agency: null, total: t11.kols_live, views: t11.views, eng: t11.eng, contacts: contacts || null, response: contacts ? t11.kols_live / contacts : null, organic, avg: t11.kols_live ? organic / t11.kols_live : null });
+    }
+    rows.sort((a, b) => a.m - b.m);
+    const chg = (a, b) => (a != null && b ? a / b - 1 : null);
+    return rows.map((r, i) => {
+      const p = rows[i - 1];
+      return { month: r.month, m: r.m, inhouse: r.inhouse, agency: r.agency, total: r.total, views: r.views, eng: r.eng, contacts: r.contacts, response: r.response,
+        organic: r.organic, avg_view: r.avg, er: r.views && r.eng != null ? r.eng / r.views : null,
+        views_chg: p ? chg(r.views, p.views) : null, total_chg: p && r.total != null && p.total != null ? r.total - p.total : null, avg_chg: p ? chg(r.avg, p.avg) : null };
+    });
+  })();
+  const c = months[months.length - 1], p = months[months.length - 2];
+  const latest = c ? { month: c.month, prev: p ? p.month : null, views: c.views, views_chg: c.views_chg, total: c.total, total_chg: c.total_chg, avg: c.avg_view, avg_chg: c.avg_chg, contacts: c.contacts, response: c.response,
+    response_chg: p && c.response != null && p.response != null ? (c.response - p.response) * 100 : null, avg_month_views: months.reduce((a, r) => a + r.views, 0) / months.length } : {};
+  const adsViews = ads.reduce((a, r) => a + (r.views || 0), 0), adsSpend = ads.reduce((a, r) => a + (r.spend || 0), 0);
+  const org11 = ads.length ? Math.max(0, t11.views - adsViews) : t11.views;
+  const split = { org: org11, ads: ads.length ? adsViews : null, share: ads.length && t11.views ? adsViews / t11.views : null, spend: ads.length ? adsSpend : null,
+    org10: report.org, ads10: report.ads, orgchg: report.org ? org11 / report.org - 1 : null };
+  const badEr = new Set(months.filter((r) => r.er != null && r.er < 0.001).map((r) => r.month));
+
+  // ---- text ----
+  const sgn = (v, show) => v == null ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '±') + show(Math.abs(v));
+  const T = {
+    month: latest.month, prev: latest.prev, views: latest.views == null ? null : fmt.format(latest.views), total: latest.total == null ? null : fmt.format(latest.total),
+    avg: latest.avg == null ? null : fmt.format(latest.avg), resp: latest.response == null ? null : pct1.format(latest.response), contacts: latest.contacts == null ? null : fmt.format(latest.contacts),
+    s_org: fmt.format(split.org), s_org10: split.org10 == null ? null : fmt.format(split.org10), s_ads: split.ads == null ? null : fmt.format(split.ads),
+    s_share: split.share == null ? null : pct1.format(split.share), s_spend: split.spend == null ? null : fmt.format(split.spend) + ' đ', s_ads10: split.ads10 == null ? null : fmt.format(split.ads10),
+    n_top: t11rank.length ? t11rank[0].name : null,
+  };
+  const C = { // [value, formatter, colored]
+    vchg: [latest.views_chg, (v) => pct1.format(v), false], achg: [latest.avg_chg, (v) => pct1.format(v), false],
+    vchg_c: [latest.views_chg, (v) => pct1.format(v), true], achg_c: [latest.avg_chg, (v) => pct1.format(v), true],
+    tchg: [latest.total_chg, (v) => fmt.format(v), false], rchg: [latest.response_chg, (v) => dec1.format(v), true], s_orgchg: [split.orgchg, (v) => pct1.format(v), true],
+  };
+  document.querySelectorAll('[data-t]').forEach((el) => {
+    const k = el.dataset.t;
+    if (k in C) { const [v, f, col] = C[k]; el.textContent = sgn(v, f); if (col && v) el.style.color = v > 0 ? 'var(--ok)' : 'var(--bad)'; }
+    else el.textContent = T[k] == null || T[k] === '' ? '—' : T[k];
+  });
+  document.getElementById('note10').textContent = report.note.length ? report.note.join('\n') : '—';
+
+  // ---- charts ----
+  const tipFor = (el) => { const t = document.createElement('div'); t.className = 'pm-tip'; t.hidden = true; el.append(t); return t; };
+  const showTip = (el, tip, ev, lines) => {
+    tip.replaceChildren(); lines.forEach((l, i) => { const d = document.createElement('div'); if (i === 0) d.className = 'k'; d.textContent = l; tip.append(d); });
     tip.hidden = false; const r = el.getBoundingClientRect();
     tip.style.left = Math.max(0, Math.min(ev.clientX - r.left + 12, r.width - tip.offsetWidth - 4)) + 'px';
     tip.style.top = Math.max(0, ev.clientY - r.top - tip.offsetHeight - 8) + 'px';
   };
-
-  function drawByDay() {
-    const el = $('c-byday'); const data = byDay; el.replaceChildren(); if (!data.length) return;
-    const W = Math.max(260, el.clientWidth), H = 260, m = { t: 24, r: 8, b: 28, l: 8 };
-    const x = d3.scaleBand(data.map((d) => d.day), [m.l, W - m.r]).padding(0.3);
-    const y = d3.scaleLinear([0, d3.max(data, (d) => d.views) || 1], [H - m.b, m.t]).nice();
-    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
-    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', H - m.b).attr('y2', H - m.b).attr('stroke', css('--line'));
-    const bw = Math.min(48, x.bandwidth());
-    const bars = svg.append('g').selectAll('rect').data(data).join('rect').attr('x', (d) => x(d.day) + (x.bandwidth() - bw) / 2).attr('width', bw).attr('y', (d) => y(d.views)).attr('height', (d) => y(0) - y(d.views)).attr('rx', 3).attr('fill', css('--c0'));
-    svg.append('g').selectAll('text').data(data).join('text').attr('x', (d) => x(d.day) + x.bandwidth() / 2).attr('y', (d) => y(d.views) - 6).attr('text-anchor', 'middle').attr('fill', css('--fg')).text((d) => W < 420 ? d3.format('.2s')(d.views).replace('k', 'K') : fmt.format(d.views));
-    svg.append('g').selectAll('text').data(data).join('text').attr('x', (d) => x(d.day) + x.bandwidth() / 2).attr('y', H - 8).attr('text-anchor', 'middle').attr('fill', css('--muted')).text((d) => d.day);
-    el.append(svg.node()); const tip = tipBox(el);
-    bars.on('mousemove', (ev, d) => showTip(tip, el, ev, 'Ngày ' + d.day, [fmt.format(d.views) + ' view · ' + d.kols + ' KOL'])).on('mouseleave', () => { tip.hidden = true; });
-  }
-
-  function hbars(el, data, valOf, labelOf, prevOf, colorOf, refVal, tipOf) {
+  const chgTxt = (v) => sgn(v, (x) => pct1.format(x));
+  const monthBars = (el, data, series, opts) => {
     el.replaceChildren(); if (!data.length) return;
-    const W = Math.max(260, el.clientWidth), row = 22, m = { t: 4, r: 8, b: 4 }, H = m.t + m.b + data.length * row;
+    const W = Math.max(260, el.clientWidth), H = 240, m = { t: 22, r: 4, b: 24, l: 4 };
+    const x = d3.scaleBand(data.map((d) => d.month), [m.l, W - m.r]).padding(0.28);
+    const top = (d) => series.reduce((a, s) => a + (s.val(d) || 0), 0);
+    const y = d3.scaleLinear([0, Math.max(d3.max(data, top) || 1, opts.ref || 0)], [H - m.b, m.t]).nice();
     const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
-    el.append(svg.node());
-    const probe = svg.append('g'); let lw = 0, vw = 0;
-    data.forEach((d) => { lw = Math.max(lw, probe.append('text').text(d.name).node().getComputedTextLength()); vw = Math.max(vw, probe.append('text').text(labelOf(d)).node().getComputedTextLength()); });
-    probe.remove(); lw = Math.min(lw, W * 0.38);
-    const x0 = lw + 10, x1 = W - m.r - vw - 8;
-    const x = d3.scaleLinear([0, Math.max(d3.max(data, valOf), refVal || 0)], [x0, Math.max(x0 + 20, x1)]);
-    const rows = svg.append('g').selectAll('g').data(data).join('g').attr('transform', (d, i) => `translate(0,${m.t + i * row})`);
-    rows.append('text').attr('x', lw).attr('y', row / 2).attr('dy', '0.35em').attr('text-anchor', 'end').attr('fill', css('--fg')).text((d) => d.name)
-      .each(function () { let s = this.textContent; while (this.getComputedTextLength() > lw && s.length > 3) { s = s.slice(0, -2); this.textContent = s + '…'; } });
-    rows.append('rect').attr('x', x0).attr('y', 4).attr('height', row - 8).attr('rx', 2).attr('width', (d) => Math.max(1, x(valOf(d)) - x0)).attr('fill', colorOf);
-    if (prevOf) rows.append('rect').attr('x', x0).attr('y', 4).attr('height', row - 8).attr('rx', 2).attr('width', (d) => Math.max(0, x(prevOf(d)) - x0)).attr('fill', css('--muted-bar'));
-    rows.append('text').attr('x', (d) => x(valOf(d)) + 6).attr('y', row / 2).attr('dy', '0.35em').attr('fill', css('--muted')).text(labelOf);
-    if (refVal) svg.append('line').attr('x1', x(refVal)).attr('x2', x(refVal)).attr('y1', m.t).attr('y2', H - m.b).attr('stroke', css('--muted')).attr('stroke-dasharray', '4 3');
-    const tip = tipBox(el);
-    rows.append('rect').attr('width', W).attr('height', row).attr('fill', 'transparent').on('mousemove', (ev, d) => showTip(tip, el, ev, d.name, tipOf(d))).on('mouseleave', () => { tip.hidden = true; });
-  }
-
-  const kolSorted = live.slice().sort((a, b) => b.views_latest - a.views_latest);
-  const drawKol = () => hbars($('c-kol'), kolSorted, (d) => d.views_latest, (d) => fmt.format(d.views_latest), (d) => d.views_prev != null ? Math.min(d.views_prev, d.views_latest) : 0, () => css('--c0'), null,
-    (d) => ['Mới nhất: ' + fmt.format(d.views_latest), 'Hôm trước: ' + (d.views_prev == null ? '—' : fmt.format(d.views_prev)), 'Tăng: ' + (d.delta == null ? '—' : fmt.format(d.delta))]);
-
-  const n = (v) => v == null ? '—' : fmt.format(v);
-  const td = (text, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = text; return c; };
-  $('tb-kol').replaceChildren(...latest.slice().sort((a, b) => (b.views_latest ?? -1) - (a.views_latest ?? -1)).map((r) => {
-    const tr = document.createElement('tr'); const nc = document.createElement('td');
-    if (/^https:\/\/(www\.)?tiktok\.com\//.test(r.link || '')) { const a = document.createElement('a'); a.href = r.link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = r.name; nc.append(a); } else nc.textContent = r.name;
-    tr.append(nc, td(n(r.views_prev), 'n pb-hide-narrow'), td(n(r.views_latest), 'n'), td(r.delta == null ? '—' : '+' + fmt.format(r.delta), 'n'), td(n(r.eng), 'n pb-hide-narrow'), td(r.er == null ? '—' : pct.format(r.er), 'n pb-hide-narrow'));
-    return tr;
-  }));
-
-  // ---- ADS ----
-  const av = raw.ads.values || [];
-  const hi = av.findIndex((r) => r && /nhóm quảng cáo/i.test(String(r[0] || '')));
-  const upd = String((av[0] && av[0][0]) || '').trim();
-  const names = { 'tên nhóm quảng cáo': 'name', 'trạng thái': 'status', 'chi tiêu': 'spend', 'lần hiển thị': 'impressions', 'phạm vi tiếp cận': 'reach', 'lượt xem video': 'views', 'lượt nhấp (tất cả)': 'clicks', 'cpm': 'cpm', 'lượt thích nhờ trả phí': 'likes' };
-  const ak = hi >= 0 ? av[hi].map((h) => names[String(h || '').replace(/\s+/g, ' ').trim().toLowerCase()] || null) : [];
-  const ads = [];
-  if (hi >= 0) for (const r of av.slice(hi + 1)) {
-    const nm = String((r && r[0]) || '').trim(); if (!nm || /^tổng/i.test(nm)) continue;
-    const o = {}; ak.forEach((k, i) => { if (k) o[k] = (k === 'name' || k === 'status') ? String(r[i] == null ? '' : r[i]).trim() : num(r[i]); }); ads.push(o);
-  }
-  const isActive = (r) => /đang hoạt động/i.test(r.status || '');
-  const sum = (k) => ads.reduce((a, r) => a + (r[k] || 0), 0);
-  const spend = sum('spend'), impr = sum('impressions'), views = sum('views'), active = ads.filter(isActive).length;
-  const cpv = views ? spend / views * 1000 : null, cpm = impr ? spend / impr * 1000 : null;
-  set('a-upd', upd); set('a-spend', fmt.format(spend) + ' đ'); set('k-spend', fmt.format(spend) + ' đ');
-  set('a-groups', fmt.format(ads.length)); set('a-views', fmt.format(views)); set('a-impr', fmt.format(impr));
-  set('a-cpv', cpv == null ? null : fmt.format(cpv) + ' đ'); set('k-cpv', cpv == null ? null : fmt.format(cpv) + ' đ');
-  set('a-cpm', cpm == null ? null : fmt.format(cpm) + ' đ'); set('a-active', fmt.format(active)); set('a-paused', fmt.format(ads.length - active));
-  if (!raw.updated && upd) set('t-upd', upd);
-
-  const adsBySpend = ads.filter((r) => r.spend != null).sort((a, b) => b.spend - a.spend);
-  const eff = ads.filter((r) => r.views).map((r) => ({ ...r, cpv: r.spend / r.views * 1000 })).sort((a, b) => a.cpv - b.cpv);
-  const adsColor = (d) => isActive(d) ? css('--c1') : css('--muted-bar');
-  const drawAds = () => {
-    hbars($('c-adsbars'), adsBySpend, (d) => d.spend, (d) => fmt.format(d.views || 0) + ' view', null, adsColor, null, (d) => ['Chi tiêu: ' + fmt.format(d.spend) + ' đ', 'Lượt xem: ' + fmt.format(d.views || 0), 'Trạng thái: ' + d.status]);
-    hbars($('c-adseff'), eff, (d) => d.cpv, (d) => fmt.format(d.cpv) + ' đ', null, adsColor, cpv, (d) => ['Chi phí / 1.000 lượt xem: ' + fmt.format(d.cpv) + ' đ', 'Trạng thái: ' + d.status]);
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', css('--line'));
+    const g = svg.append('g').selectAll('g').data(data).join('g');
+    series.forEach((s, si) => {
+      g.append('rect').attr('x', (d) => x(d.month)).attr('width', x.bandwidth()).attr('rx', 2)
+        .attr('y', (d) => y(series.slice(0, si + 1).reduce((a, q) => a + (q.val(d) || 0), 0)))
+        .attr('height', (d) => Math.max(0, y(0) - y(s.val(d) || 0))).style('fill', (d) => s.color(d));
+    });
+    if (opts.ref) svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(opts.ref)).attr('y2', y(opts.ref)).style('stroke', css('--ref')).attr('stroke-dasharray', '4 3');
+    const small = W < 460;
+    g.append('text').attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', (d) => y(top(d)) - 6).attr('text-anchor', 'middle').style('fill', css('--fg')).style('font-size', small ? '10px' : '12px').text((d) => opts.label(d));
+    g.append('text').attr('x', (d) => x(d.month) + x.bandwidth() / 2).attr('y', H - 7).attr('text-anchor', 'middle').style('fill', css('--muted')).text((d) => d.month);
+    el.append(svg.node()); const tip = tipFor(el);
+    g.append('rect').attr('x', (d) => x(d.month) - x.step() * x.paddingInner() / 2).attr('width', x.step()).attr('y', 0).attr('height', H).style('fill', 'transparent')
+      .on('mousemove', (ev, d) => showTip(el, tip, ev, opts.lines(d))).on('mouseleave', () => { tip.hidden = true; });
   };
-  $('tb-ads').replaceChildren(...adsBySpend.map((r) => {
-    const tr = document.createElement('tr'); const st = td(r.status); st.style.color = isActive(r) ? 'var(--ok)' : 'var(--muted)';
-    tr.append(td(r.name), st, td(n(r.spend), 'n'), td(n(r.views), 'n'), td(n(r.reach), 'n pb-hide-narrow'), td(n(r.clicks), 'n pb-hide-narrow'), td(n(r.cpm), 'n pb-hide-narrow'), td(n(r.likes), 'n pb-hide-narrow'));
+
+  const draw = () => {
+    const col = COL();
+    monthBars(document.getElementById('c_views'), months, [{ val: (d) => d.views, color: () => col[0] }], {
+      ref: latest.avg_month_views, label: (d) => short(d.views),
+      lines: (d) => [d.month, fmt.format(d.views) + ' view', 'So với tháng trước: ' + chgTxt(d.views_chg), 'TB các tháng: ' + fmt.format(latest.avg_month_views)],
+    });
+    const ns = (d) => d.inhouse == null && d.agency == null;
+    monthBars(document.getElementById('c_kols'), months, [
+      { val: (d) => ns(d) ? d.total : d.inhouse, color: (d) => ns(d) ? css('--chart-muted') : col[0] },
+      { val: (d) => ns(d) ? 0 : d.agency, color: () => col[1] },
+    ], { label: (d) => fmt.format(d.total),
+      lines: (d) => ns(d) ? [d.month, fmt.format(d.total) + ' KOL', 'Chưa tách Inhouse / Agency'] : [d.month, fmt.format(d.total) + ' KOL', 'Inhouse: ' + fmt.format(d.inhouse || 0) + ' (' + pct1.format(d.total ? (d.inhouse || 0) / d.total : 0) + ')', 'Agency: ' + fmt.format(d.agency || 0)] });
+    monthBars(document.getElementById('c_avg'), months.filter((d) => d.avg_view != null), [{ val: (d) => d.avg_view, color: () => col[2] }], {
+      label: (d) => short(d.avg_view), lines: (d) => [d.month, fmt.format(d.avg_view) + ' view / KOL', 'So với tháng trước: ' + chgTxt(d.avg_chg)] });
+    const cr = months.filter((d) => d.contacts != null);
+    monthBars(document.getElementById('c_contact'), cr, [{ val: (d) => d.contacts, color: () => col[4] }], {
+      label: (d) => d.response == null ? fmt.format(d.contacts) : pct1.format(d.response),
+      lines: (d) => [d.month, fmt.format(d.contacts) + ' lượt liên hệ', 'Phản hồi: ' + (d.response == null ? '—' : pct1.format(d.response))] });
+
+    // ER line
+    const el = document.getElementById('c_er'); el.replaceChildren();
+    const pts = months.filter((d) => d.er != null);
+    const W = Math.max(260, el.clientWidth), H = 240, m = { t: 22, r: 16, b: 24, l: 16 };
+    const x = d3.scalePoint(months.map((d) => d.month), [m.l, W - m.r]).padding(0.4);
+    const y = d3.scaleLinear([0, d3.max(pts, (d) => d.er) || 0.01], [H - m.b, m.t]).nice();
+    const svg = d3.create('svg').attr('width', '100%').attr('viewBox', `0 0 ${W} ${H}`).style('display', 'block');
+    svg.append('line').attr('x1', m.l).attr('x2', W - m.r).attr('y1', y(0)).attr('y2', y(0)).style('stroke', css('--line'));
+    svg.append('path').datum(pts.filter((d) => !badEr.has(d.month))).attr('d', d3.line().x((d) => x(d.month)).y((d) => y(d.er))).style('fill', 'none').style('stroke', col[3]).attr('stroke-width', 2);
+    const g = svg.append('g').selectAll('g').data(pts).join('g');
+    g.append('circle').attr('cx', (d) => x(d.month)).attr('cy', (d) => y(d.er)).attr('r', 4).style('fill', (d) => badEr.has(d.month) ? css('--bad') : col[3]);
+    g.append('text').attr('x', (d) => x(d.month)).attr('y', (d) => y(d.er) - 9).attr('text-anchor', 'middle').style('fill', css('--fg')).style('font-size', W < 460 ? '10px' : '12px').text((d) => pct1.format(d.er));
+    svg.append('g').selectAll('text').data(months).join('text').attr('x', (d) => x(d.month)).attr('y', H - 7).attr('text-anchor', 'middle').style('fill', css('--muted')).text((d) => d.month);
+    el.append(svg.node()); const tip = tipFor(el);
+    g.append('rect').attr('x', (d) => x(d.month) - x.step() / 2).attr('width', x.step()).attr('y', 0).attr('height', H).style('fill', 'transparent')
+      .on('mousemove', (ev, d) => showTip(el, tip, ev, [d.month, 'Tương tác: ' + pct2.format(d.er), 'ENG ' + fmt.format(d.eng) + ' · View ' + fmt.format(d.views)].concat(badEr.has(d.month) ? ['ENG có thể nhập sai'] : [])))
+      .on('mouseleave', () => { tip.hidden = true; });
+  };
+
+  // ---- tables ----
+  const td = (t, cls) => { const c = document.createElement('td'); if (cls) c.className = cls; c.textContent = t; return c; };
+  const n = (v) => v == null ? '—' : fmt.format(v);
+  const colored = (v) => { const c = td(chgTxt(v), 'n'); if (v) c.style.color = v > 0 ? 'var(--ok)' : 'var(--bad)'; return c; };
+  document.getElementById('tb_months').replaceChildren(...months.map((r) => {
+    const tr = document.createElement('tr');
+    tr.append(td(r.month), td(n(r.total), 'n'), td(n(r.inhouse), 'n'), td(n(r.agency), 'n'), td(n(r.views), 'n'), colored(r.views_chg), td(n(r.organic), 'n'), td(n(r.avg_view), 'n'), colored(r.avg_chg),
+      td(n(r.eng), 'n'), td(r.er == null ? '—' : pct2.format(r.er), 'n'), td(n(r.contacts), 'n'), td(r.response == null ? '—' : pct1.format(r.response), 'n'));
+    return tr;
+  }));
+  document.getElementById('tb_videos').replaceChildren(...t11rank.map((r) => {
+    const tr = document.createElement('tr'); const lk = document.createElement('td');
+    const url = String(r.link || '').split('?')[0];
+    if (/^https:\/\/(www\.|vt\.|vm\.)?tiktok\.com\//.test(url)) { const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'Mở video'; lk.append(a); } else lk.textContent = '—';
+    tr.append(td(r.name), td(n(r.views), 'n'), td(n(r.eng), 'n'), td(r.caption || '—', 'cap'), lk);
     return tr;
   }));
 
-  const drawAll = () => { drawByDay(); drawKol(); drawAds(); };
-  drawAll();
-  let w = window.innerWidth; window.addEventListener('resize', () => { if (window.innerWidth !== w) { w = window.innerWidth; drawAll(); } });
+  draw();
+  let w = window.innerWidth; window.addEventListener('resize', () => { if (window.innerWidth !== w) { w = window.innerWidth; draw(); } });
 })();
 </script>
 </body>
